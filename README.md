@@ -1,0 +1,71 @@
+# Medicitas App Android – Módulo E‑commerce
+
+Este README documenta la app Android del e‑commerce (Medicitas‑app), su arquitectura, configuración de entorno, endpoints y pasos de prueba. Está enfocado en la entrega actual del módulo móvil.
+
+## Alcance
+- Proyecto monorepo: la raíz contiene el sistema web de citas y otros componentes; este documento cubre exclusivamente la app Android del e‑commerce.
+- Video de demostración: se recomienda seguir el guion del archivo `PLAN_ENTREGA_VIDEO_RUBRICA.md` en la raíz.
+
+## Requisitos
+- Android Studio o Java + Gradle.
+- Backend en ejecución accesible desde emulador/dispositivo.
+
+## Entorno y BASE_URL
+- Emulador Android: use `http://10.0.2.2:8000/` como host. La app añade el sufijo `api/` en `NetworkModule.kt`.
+- Dispositivo físico: use la IP local del servidor (misma red). Ejemplo: `http://192.168.0.10:8000/`.
+- Producción: usar HTTPS.
+
+## Cómo construir y ejecutar
+- Build: `./gradlew assembleDebug`
+- Limpieza: `./gradlew clean assembleDebug`
+- Instale en emulador o dispositivo desde Android Studio.
+
+## Arquitectura
+- Patrón: MVVM con Hilt para inyección de dependencias.
+- Red: Retrofit + OkHttp + HttpLoggingInterceptor (solo debug).
+- Autenticación: TokenManager, AuthInterceptor (añade `Authorization: Bearer`), JwtAuthenticator (refresh automático).
+- Imágenes: Coil con `placeholder`/`error` y `crossfade`.
+- Navegación: NavHost con rutas (Login, Catalog, ProductDetail, Cart, Checkout, Profile).
+
+## Endpoints relevantes
+- Login: `POST /api/users/auth/login/` devuelve envelope `{ message, data }` donde `data = { access, refresh, user }`.
+- Perfil (protegido): `GET /api/users/me/`.
+- Productos: `GET /api/ecommerce/products/` (paginación `page` y `page_size` si el backend lo soporta).
+
+## Flujo de autenticación
+- `ApiService.login()` parsea `LoginEnvelope` y `AuthRepository.login()` extrae `data` antes de guardar tokens.
+- `AuthInterceptor` añade `Authorization: Bearer <access>` si existe.
+- `JwtAuthenticator` ante `401` intenta refresh con `refresh_token` y reintenta la solicitud.
+
+## Pruebas rápidas (UI)
+- En Profile: botones de debug.
+  - "Probar sesión (me)": debe responder 200 con JSON del usuario.
+  - "Forzar 401 y reintentar": simula 401; se espera refresh y retry automático.
+- Redirecciones: tras login desde Login, navegar a Catalog; si proviene de Cart→Checkout, redirige a Checkout.
+
+## Estados de UI
+- Catálogo/Detalle usan `UIState` para Loading/Success/Error/Empty.
+- En Error se muestra mensaje y botón "Reintentar".
+- Imágenes con `placeholder` y `error` visibles cuando `imageUrl` falla.
+
+## Seguridad
+- Debug: SharedPreferences simple para tokens.
+- Release: EncryptedSharedPreferences para `access_token` y `refresh_token`.
+- Logout: limpia tokens y back stack.
+
+## Logs y verificación
+- Logcat (Debug): verificar presencia del header `Authorization` y las secuencias 401→refresh→retry del `JwtAuthenticator`.
+
+## Tests
+- Unit tests sugeridos: TokenManager, AuthRepository (login ok y error), JwtAuthenticator (refresh ok/fallo).
+- Instrumented test sugerido: login→checkout protegido; persistencia tras reinicio.
+
+## Problemas frecuentes
+- HTML en `/me/`: revisar que la ruta sea `/api/users/me/` y que se envíe `Authorization`.
+- Build bloqueado por archivos: usar `./gradlew clean assembleDebug`.
+- Imágenes no cargan: validar `imageUrl` real, usar `placeholder/error`.
+
+## Referencias
+- `PLAN_ENTREGA_VIDEO_RUBRICA.md` en la raíz: cronograma y guion del video.
+- `NetworkModule.kt`: configuración de Retrofit/OkHttp y BASE_URL.
+- `AuthInterceptor.kt` y `JwtAuthenticator.kt`: cabecera y refresh.
