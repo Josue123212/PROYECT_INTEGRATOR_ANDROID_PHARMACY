@@ -13,9 +13,9 @@ class RemoteProductRepository @Inject constructor(
 ) : ProductRepository {
     override fun observeCache(): Flow<List<Product>> = flowOf(emptyList())
 
-    override suspend fun getProducts(page: Int, pageSize: Int): Result<ProductPage> {
+    override suspend fun getProducts(page: Int, pageSize: Int, categoryId: Int?, search: String?): Result<ProductPage> {
         return try {
-            val response = api.getProducts(page = page, pageSize = pageSize)
+            val response = api.getProducts(page = page, pageSize = pageSize, categoryId = categoryId, search = search)
             val products = response.results.map { it.toDomain() }
             Result.Success(
                 ProductPage(

@@ -2,6 +2,8 @@
     <string name="app_name">Farmacia-Medicitas</string>
     <!-- Catálogo y navegación -->
     <string name="catalog_title_offers">Ofertas de la semana</string>
+    <string name="offers_title">Ofertas</string>
+    <string name="see_catalog">Ver catálogo</string>
     <string name="action_sort">Ordenar</string>
     <string name="action_filter">Filtrar</string>
     <string name="action_settings">Ajustes</string>
@@ -21,6 +23,12 @@
     <string name="action_next">Siguiente</string>
     <string name="banner_content_description">Banner %1$d</string>
     <string name="product_image_content_description">Imagen de %1$s</string>
+    <string name="category_all">Todas</string>
+    <string name="offer_badge">En oferta</string>
+    <string name="welcome_title">Rápido, fácil y económico</string>
+    <string name="welcome_subtitle">Ordena ahora: gran selección y calidad</string>
+    <string name="action_sign_up">Crear cuenta</string>
+    <string name="action_sign_in">Iniciar sesión</string>
 
     <!-- Detalle -->
     <string name="product_not_found">Producto no encontrado</string>

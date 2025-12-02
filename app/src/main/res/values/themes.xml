@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.FarmaciaMedicitas" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.FarmaciaMedicitas" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@drawable/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/icono_app</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+    </style>
 </resources>

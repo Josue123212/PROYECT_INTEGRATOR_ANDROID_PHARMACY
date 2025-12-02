@@ -12,6 +12,7 @@ import com.example.farmacia_medicitas.MainActivity
 
 object Notifier {
     private const val CHANNEL_ID = Constants.NOTIFICATION_ORDER_CHANNEL_ID
+    private const val OFFERS_CHANNEL_ID = Constants.NOTIFICATION_OFFERS_CHANNEL_ID
 
     private fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -22,6 +23,12 @@ object Notifier {
             )
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
+            val offers = NotificationChannel(
+                OFFERS_CHANNEL_ID,
+                "Ofertas Medicitas",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            manager.createNotificationChannel(offers)
         }
     }
 
@@ -47,5 +54,29 @@ object Notifier {
             .setAutoCancel(true)
 
         NotificationManagerCompat.from(context).notify(1001, builder.build())
+    }
+
+    fun notifyOffer(context: Context, name: String, price: Double?) {
+        ensureChannel(context)
+        val text = if (price != null) "$name en oferta por S/. ${String.format("%.2f", price)}" else "$name en oferta"
+        val intent = android.content.Intent(context, MainActivity::class.java).apply {
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val pending = PendingIntent.getActivity(
+            context,
+            2001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, OFFERS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Nueva oferta")
+            .setContentText(text)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+
+        NotificationManagerCompat.from(context).notify(System.currentTimeMillis().toInt(), builder.build())
     }
 }

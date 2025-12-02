@@ -4,12 +4,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,9 +30,14 @@ import com.example.farmacia_medicitas.data.model.Product
 @Composable
 fun SearchScreen(
     products: List<Product>,
+    isLoading: Boolean,
     onBack: () -> Unit,
     onProductClick: (String) -> Unit,
-    onAddToCart: (Product) -> Unit
+    onAddToCart: (Product) -> Unit,
+    onNavigateHome: (() -> Unit)? = null,
+    onNavigateProfile: (() -> Unit)? = null,
+    onNavigateCart: (() -> Unit)? = null,
+    onNavigateSettings: (() -> Unit)? = null
 ) {
     var query by remember { mutableStateOf("") }
     val filtered = remember(query, products) {
@@ -39,47 +49,62 @@ fun SearchScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Buscar", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
-                }
-            )
+        topBar = {},
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(selected = false, onClick = { onNavigateHome?.invoke() }, icon = { Icon(Icons.Filled.Home, contentDescription = null) }, label = { Text("") }, alwaysShowLabel = false)
+                NavigationBarItem(selected = true, onClick = { }, icon = { Icon(Icons.Filled.Search, contentDescription = null) }, label = { Text("") }, alwaysShowLabel = false)
+                NavigationBarItem(selected = false, onClick = { onNavigateCart?.invoke() }, icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) }, label = { Text("") }, alwaysShowLabel = false)
+                NavigationBarItem(selected = false, onClick = { onNavigateProfile?.invoke() }, icon = { Icon(Icons.Filled.Person, contentDescription = null) }, label = { Text("") }, alwaysShowLabel = false)
+                NavigationBarItem(selected = false, onClick = { onNavigateSettings?.invoke() }, icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text("") }, alwaysShowLabel = false)
+            }
         }
     ) { inner ->
         Column(modifier = Modifier.padding(inner).fillMaxSize()) {
-            OutlinedTextField(
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(16.dp)) {
+                OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(8.dp),
                 placeholder = { Text("Buscar productos…") },
-                singleLine = true
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp)
             )
+            }
 
-            Text(
-                text = "Resultados: ${filtered.size}",
-                modifier = Modifier.padding(horizontal = 16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (!isLoading) {
+                Text(
+                    text = "Resultados: ${filtered.size}",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-            LazyVerticalGrid(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filtered, key = { it.id }) { product ->
-                    SearchProductCard(
-                        product = product,
-                        onClick = { onProductClick(product.id) },
-                        onAddToCart = { onAddToCart(product) }
-                    )
+            if (isLoading) {
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(6) {
+                        com.example.farmacia_medicitas.ui.components.ProductSkeletonCard(modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filtered, key = { it.id }) { product ->
+                        SearchProductCard(
+                            product = product,
+                            onClick = { onProductClick(product.id) },
+                            onAddToCart = { onAddToCart(product) }
+                        )
+                    }
                 }
             }
         }

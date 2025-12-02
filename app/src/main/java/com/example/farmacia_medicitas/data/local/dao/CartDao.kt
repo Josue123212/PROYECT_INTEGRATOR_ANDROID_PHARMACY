@@ -12,6 +12,9 @@ interface CartDao {
     @Query("SELECT * FROM cart_items")
     fun observeAll(): Flow<List<CartItemEntity>>
 
+    @Query("SELECT * FROM cart_items")
+    suspend fun listAll(): List<CartItemEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: CartItemEntity)
 

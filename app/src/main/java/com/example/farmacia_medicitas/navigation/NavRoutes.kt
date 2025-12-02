@@ -1,8 +1,11 @@
 package com.example.farmacia_medicitas.navigation
 
 sealed class NavRoutes(val route: String) {
+    data object Welcome : NavRoutes("welcome")
     data object Home : NavRoutes("home")
-    data object Catalog : NavRoutes("catalog")
+    data object Dashboard : NavRoutes("dashboard")
+    data object DeliveryMap : NavRoutes("delivery_map")
+    
     data object Cart : NavRoutes("cart")
     data object Checkout : NavRoutes("checkout")
     data object Login : NavRoutes("login")
@@ -13,6 +16,17 @@ sealed class NavRoutes(val route: String) {
     data object Search : NavRoutes("search")
     data object Profile : NavRoutes("profile")
     data object WebView : NavRoutes("webview")
+    data object Orders : NavRoutes("orders")
+    data object Wishlist : NavRoutes("wishlist")
+    data object Location : NavRoutes("location")
+    data object Notifications : NavRoutes("notifications")
+    
+    data object OrderDetail : NavRoutes("order/{id}") {
+        val routeTemplate: String = route
+        fun route(id: Int) = "order/$id"
+    }
+    data object Addresses : NavRoutes("addresses")
+    data object PaymentMethods : NavRoutes("payment_methods")
 
     data object ProductDetail : NavRoutes("product/{id}") {
         val routeTemplate: String = route

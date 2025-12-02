@@ -39,6 +39,20 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun register(email: String, username: String, password: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            runCatching {
+                repo.register(email, username, password)
+            }.onSuccess { user ->
+                _state.value = _state.value.copy(isLoading = false, error = null, user = user, isAuthenticated = true)
+                onSuccess()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(isLoading = false, error = e.localizedMessage ?: "Error al crear cuenta")
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             repo.logout()

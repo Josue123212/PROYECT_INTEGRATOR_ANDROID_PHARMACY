@@ -43,4 +43,8 @@ class CartViewModel @Inject constructor(
     fun decrease(item: CartItem) {
         viewModelScope.launch { repo.decrease(item.product.id) }
     }
+
+    fun clear() {
+        viewModelScope.launch { repo.clear() }
+    }
 }

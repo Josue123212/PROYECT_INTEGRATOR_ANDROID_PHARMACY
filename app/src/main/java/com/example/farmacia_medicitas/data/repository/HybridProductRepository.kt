@@ -19,9 +19,9 @@ class HybridProductRepository @Inject constructor(
     override fun observeCache(): kotlinx.coroutines.flow.Flow<List<Product>> =
         dao.observeAll().map { list -> list.map { it.toDomain() } }
 
-    override suspend fun getProducts(page: Int, pageSize: Int): Result<ProductPage> = withContext(Dispatchers.IO) {
+    override suspend fun getProducts(page: Int, pageSize: Int, categoryId: Int?, search: String?): Result<ProductPage> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getProducts(page = page, pageSize = pageSize)
+            val response = api.getProducts(page = page, pageSize = pageSize, categoryId = categoryId, search = search)
             val products = response.results.map { it.toDomain() }
             dao.replaceAll(products.map { it.toEntity() })
             Result.Success(
@@ -36,13 +36,18 @@ class HybridProductRepository @Inject constructor(
                 )
             )
         } catch (e: Exception) {
-            val total = dao.getAll().size
+            val all = dao.getAll()
+            val filtered = if (search.isNullOrBlank()) all else all.filter { ent ->
+                ent.name.contains(search, ignoreCase = true) || (ent.description ?: "").contains(search, ignoreCase = true)
+            }
+            val total = filtered.size
             val totalPages = if (total == 0) 1 else ((total + pageSize - 1) / pageSize)
             val current = page.coerceIn(1, totalPages)
             val offset = ((current - 1).coerceAtLeast(0)) * pageSize
-            val slice = dao.getPaged(pageSize, offset).map { it.toDomain() }
+            val slice = filtered.drop(offset).take(pageSize).map { it.toDomain() }
             Result.Success(
                 ProductPage(
+
                     products = slice,
                     count = total,
                     totalPages = totalPages,

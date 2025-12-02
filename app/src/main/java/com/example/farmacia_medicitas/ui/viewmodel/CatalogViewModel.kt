@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.farmacia_medicitas.core.Constants
 import com.example.farmacia_medicitas.core.Result
 import com.example.farmacia_medicitas.data.model.Product
+import com.example.farmacia_medicitas.data.model.Category
+import com.example.farmacia_medicitas.data.repository.CategoryRepository
 import com.example.farmacia_medicitas.data.repository.ProductRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,12 +23,18 @@ data class CatalogState(
     val totalPages: Int = 1,
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
-    val pageSize: Int = Constants.DEFAULT_PAGE_SIZE
+    val pageSize: Int = Constants.DEFAULT_PAGE_SIZE,
+    val categories: List<Category> = emptyList(),
+    val selectedCategoryId: Int? = null,
+    val searchQuery: String = "",
+    val suggestions: List<Product> = emptyList(),
+    val isSearching: Boolean = false
 )
 
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
-    private val repository: ProductRepository
+    private val repository: ProductRepository,
+    private val categoriesRepo: CategoryRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CatalogState())
@@ -38,13 +46,14 @@ class CatalogViewModel @Inject constructor(
                 _state.value = _state.value.copy(products = cached, isLoading = false, error = null)
             }
         }
+        loadCategories()
         loadProducts(page = 1)
     }
 
     private fun loadProducts(page: Int) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
-            when (val res = repository.getProducts(page = page, pageSize = _state.value.pageSize)) {
+            when (val res = repository.getProducts(page = page, pageSize = _state.value.pageSize, categoryId = _state.value.selectedCategoryId, search = null)) {
                 is Result.Success -> {
                     val pageData = res.data
                     _state.value = _state.value.copy(
@@ -69,10 +78,28 @@ class CatalogViewModel @Inject constructor(
         }
     }
 
+    private fun loadCategories() {
+        viewModelScope.launch {
+            when (val res = categoriesRepo.getCategories()) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(categories = res.data)
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(error = res.message)
+                }
+            }
+        }
+    }
+
     fun getProduct(id: String): Product? = _state.value.products.find { it.id == id }
 
     fun reload() {
         loadProducts(page = _state.value.currentPage)
+    }
+
+    fun selectCategory(id: Int?) {
+        _state.value = _state.value.copy(selectedCategoryId = id)
+        loadProducts(page = 1)
     }
 
     fun nextPage() {
@@ -86,6 +113,25 @@ class CatalogViewModel @Inject constructor(
         val prev = _state.value.currentPage - 1
         if (prev >= 1) {
             loadProducts(page = prev)
+        }
+    }
+
+    fun searchSuggestions(query: String) {
+        _state.value = _state.value.copy(searchQuery = query)
+        if (query.length < 2) {
+            _state.value = _state.value.copy(suggestions = emptyList(), isSearching = false)
+            return
+        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isSearching = true)
+            when (val res = repository.getProducts(page = 1, pageSize = 5, categoryId = null, search = query)) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(suggestions = res.data.products, isSearching = false)
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(suggestions = emptyList(), isSearching = false)
+                }
+            }
         }
     }
 }

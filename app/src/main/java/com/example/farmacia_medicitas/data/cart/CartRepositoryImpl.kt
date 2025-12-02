@@ -1,6 +1,9 @@
 package com.example.farmacia_medicitas.data.cart
 
 import com.example.farmacia_medicitas.data.local.dao.CartDao
+import com.example.farmacia_medicitas.data.remote.ApiService
+import com.example.farmacia_medicitas.data.remote.dto.cart.AddItemRequest
+import com.example.farmacia_medicitas.data.auth.TokenManager
 import com.example.farmacia_medicitas.data.local.entity.CartItemEntity
 import com.example.farmacia_medicitas.data.model.CartItem
 import com.example.farmacia_medicitas.data.model.Product
@@ -11,7 +14,9 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class CartRepositoryImpl @Inject constructor(
-    private val dao: CartDao
+    private val dao: CartDao,
+    private val api: ApiService,
+    private val tokenManager: TokenManager
 ) : CartRepository {
 
     override val items: Flow<List<CartItem>> = dao.observeWithProducts().map { list ->
@@ -37,6 +42,13 @@ class CartRepositoryImpl @Inject constructor(
             quantity = currentQty + 1
         )
         dao.upsert(newEntity)
+        val access = tokenManager.getAccessToken()
+        if (!access.isNullOrBlank()) {
+            try {
+                val pid = product.id.toIntOrNull() ?: return@withContext
+                api.addCartItem(AddItemRequest(product_id = pid, quantity = 1))
+            } catch (_: Exception) { }
+        }
     }
 
     override suspend fun increase(productId: String) = withContext(Dispatchers.IO) {
@@ -53,5 +65,25 @@ class CartRepositoryImpl @Inject constructor(
 
     override suspend fun clear() = withContext(Dispatchers.IO) {
         dao.clear()
+        val access = tokenManager.getAccessToken()
+        if (!access.isNullOrBlank()) {
+            try { api.clearCart() } catch (_: Exception) { }
+        }
+    }
+
+    override suspend fun syncRemote() = withContext(Dispatchers.IO) {
+        val access = tokenManager.getAccessToken()
+        if (access.isNullOrBlank()) return@withContext
+        try {
+            try { api.clearCart() } catch (_: Exception) { }
+            val items = dao.listAll()
+            items.forEach { item ->
+                val pid = item.productId.toIntOrNull() ?: return@forEach
+                val qty = item.quantity
+                if (qty > 0) {
+                    api.addCartItem(AddItemRequest(product_id = pid, quantity = qty))
+                }
+            }
+        } catch (_: Exception) { }
     }
 }

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 interface ProductRepository {
-    suspend fun getProducts(page: Int = 1, pageSize: Int = 20): Result<ProductPage>
+    suspend fun getProducts(page: Int = 1, pageSize: Int = 20, categoryId: Int? = null, search: String? = null): Result<ProductPage>
     suspend fun getProductById(id: String): Result<Product>
     fun observeCache(): Flow<List<Product>>
 }
@@ -47,15 +47,19 @@ class FakeProductRepository @Inject constructor() : ProductRepository {
         )
     )
 
-    override suspend fun getProducts(page: Int, pageSize: Int): Result<ProductPage> {
+    override suspend fun getProducts(page: Int, pageSize: Int, categoryId: Int?, search: String?): Result<ProductPage> {
         val fromIndex = ((page - 1).coerceAtLeast(0)) * pageSize
-        val toIndex = (fromIndex + pageSize).coerceAtMost(products.size)
-        val slice = if (fromIndex < products.size) products.subList(fromIndex, toIndex) else emptyList()
-        val totalPages = if (products.isEmpty()) 1 else ((products.size + pageSize - 1) / pageSize)
+        val filtered = if (!search.isNullOrBlank()) {
+            val q = search.lowercase()
+            products.filter { it.name.lowercase().contains(q) || (it.description ?: "").lowercase().contains(q) }
+        } else products
+        val toIndex = (fromIndex + pageSize).coerceAtMost(filtered.size)
+        val slice = if (fromIndex < filtered.size) filtered.subList(fromIndex, toIndex) else emptyList()
+        val totalPages = if (filtered.isEmpty()) 1 else ((filtered.size + pageSize - 1) / pageSize)
         return Result.Success(
             ProductPage(
                 products = slice,
-                count = products.size,
+                count = filtered.size,
                 totalPages = totalPages,
                 currentPage = page.coerceIn(1, totalPages),
                 pageSize = pageSize,

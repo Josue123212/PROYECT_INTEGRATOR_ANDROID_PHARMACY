@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scale xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/icono_de_mi_app"
+    android:scaleWidth="1.6"
+    android:scaleHeight="1.6"
+    android:useIntrinsicSizeAsMinimum="true"
+    android:gravity="center" />

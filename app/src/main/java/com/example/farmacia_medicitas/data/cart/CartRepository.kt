@@ -10,5 +10,5 @@ interface CartRepository {
     suspend fun increase(productId: String)
     suspend fun decrease(productId: String)
     suspend fun clear()
+    suspend fun syncRemote()
 }
-
